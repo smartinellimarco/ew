@@ -1,0 +1,11 @@
+[package]
+name = "ew-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ropey = "1.6"
+unicode-segmentation = "1.11.0" 
