@@ -1,0 +1,111 @@
+Text Object System Architecture
+===============================
+
+                                  ┌─────────────────┐
+                                  │   Operations    │
+                                  │                 │
+                                  │ • MoveWordFwd   │
+                                  │ • SelectWord    │
+                                  │ • DeleteFunc    │
+                                  └─────────┬───────┘
+                                            │
+                                   creates TextObject
+                                   requests via Buffer
+                                            │
+                                            ▼
+                    ┌─────────────────────────────────────────────────────┐
+                    │                    Buffer                           │
+                    │                                                     │
+                    │ ┌─────────────┐  ┌─────────────────────────────────┐│
+                    │ │    Rope     │  │      TextObjectRegistry         ││
+                    │ │             │  │                                 ││
+                    │ │ • Content   │  │  ┌─────────────────────────────┐││
+                    │ │ • Lines     │  │  │     Capability Cache        │││
+                    │ │ • Chars     │  │  │                             │││
+                    │ └─────────────┘  │  │  Word      -> BasicFinder   │││
+                    │        │         │  │  Function  -> TreeSitter    │││
+                    │   implements     │  │  Class     -> TreeSitter    │││
+                    │   TextNavigator  │  │  Brackets  -> BasicFinder   │││
+                    │        │         │  └─────────────────────────────┘││
+                    │        │         │                │                ││
+                    │        └─────────┼────────────────┤                ││
+                    │                  │  ┌─────────────▼───────────────┐││
+                    │                  │  │        Finders List         │││
+                    │                  │  │                             │││
+                    │                  │  │  [0] BasicTextObjectFinder  │││
+                    │                  │  │  [1] TreeSitterFinder       │││
+                    │                  │  │  [2] RegexFinder (future)   │││
+                    │                  │  └─────────────────────────────┘││
+                    │                  └─────────────────────────────────┘│
+                    └─────────────────────────────────────────────────────┘
+                                            │
+                           delegates text object queries to
+                         appropriate finder based on TextObjectKind
+                                            │
+                                            ▼
+            ┌─────────────────────────────────────────────────────────────┐
+            │                  Text Object Finders                        │
+            └─────────────────────────────────────────────────────────────┘
+            │                            │                               │
+            ▼                            ▼                               ▼
+┌───────────────────────┐  ┌─────────────────────────────┐  ┌──────────────────────┐
+│  BasicTextObjectFinder│  │ TreeSitterTextObjectFinder  │  │ Future Finders       │
+│                       │  │                             │  │                      │
+│ Handles:              │  │ Handles:                    │  │ • RegexFinder        │
+│ • Word                │  │ • Function                  │  │ • SexpFinder         │
+│ • BigWord             │  │ • Class                     │  │ • CustomFinder       │
+│ • Line                │  │ • Statement                 │  │                      │
+│ • Paragraph           │  │ • Parameter                 │  │ (can be added        │
+│ • Parentheses         │  │ • Comment                   │  │  without changing    │
+│ • Brackets            │  │ • String                    │  │  existing code)      │
+│ • Braces              │  │                             │  │                      │
+│                       │  │ Requires:                   │  │                      │
+│ Uses:                 │  │ • Tree-sitter grammar       │  │                      │
+│ • Character iteration │  │ • Syntax tree parsing       │  │                      │
+│ • Pattern matching    │  │ • AST navigation            │  │                      │
+└───────────────────────┘  └─────────────────────────────┘  └──────────────────────┘
+            │                            │                               │
+            │                            │                               │
+            └────────────┬───────────────┴───────────────┬───────────────┘
+                         │                               │
+                         ▼                               ▼
+                 ┌─────────────────────────────────────────────┐
+                 │            TextNavigator Trait              │
+                 │                                             │
+                 │ Provides abstract access to text data:      │
+                 │                                             │
+                 │ • len_chars() -> usize                      │
+                 │ • char_at(pos) -> Option<char>              │
+                 │ • char_to_line(pos) -> usize                │
+                 │ • line_chars(line) -> Iterator<char>        │
+                 │ • slice_to_string(start, end) -> String     │
+                 │                                             │
+                 │ Implemented by Buffer (delegates to Rope)   │
+                 └─────────────────────────────────────────────┘
+
+
+Data Flow Example:
+==================
+
+1. Operation creates TextObject::word()
+2. Buffer.find_text_object_at(pos, &word_obj)
+3. Registry looks up TextObjectKind::Word in cache
+4. Cache returns BasicTextObjectFinder (index 0)
+5. BasicFinder.find_at(buffer_as_navigator, pos, word_obj)
+6. BasicFinder uses TextNavigator methods:
+   - navigator.char_at(pos)
+   - navigator.char_at(pos-1)
+   - etc.
+7. Returns TextRange { start: 5, end: 10 }
+8. Buffer.text_in_range(&range) -> "hello"
+
+
+Key Design Principles:
+======================
+
+• Operations know about TextObjects but not finders
+• Buffer coordinates but doesn't implement text object logic
+• Finders are isolated and pluggable
+• TextNavigator abstracts the underlying data structure
+• Registry provides capability-based routing
+• Tree-sitter support is optional and conditional
