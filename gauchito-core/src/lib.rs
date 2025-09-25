@@ -1,9 +1,0 @@
-pub mod buffer;
-pub mod context;
-pub mod edit;
-pub mod text_objects;
-pub mod history;
-pub mod operations;
-pub mod registry;
-pub mod selection;
-pub mod textobjects;

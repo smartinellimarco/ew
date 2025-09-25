@@ -1,6 +1,0 @@
-el AST deberia ser algo del contexto y el textobject finder deberia ser una utility que reciba ese AST
-o parte de la misma abstraccion SnytaxTree
-el tema es que haces con el resto de los objetos normales, otro finder?
-lo bueno de eso es que la grammar queda enb el contexto y tambien podes usarla para highlighting
-
-el treesitter parser deberia actualizarse con los EDITS, ni siquiera viendo el content del buffer luego de un edit

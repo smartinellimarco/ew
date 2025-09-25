@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "ew-core",
+    "core",
 ]
 resolver = "2"
 

@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "ew-core"
+name = "core"
 version = "0.1.0"
 dependencies = [
  "ropey",

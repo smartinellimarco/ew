@@ -1,5 +1,5 @@
 [package]
-name = "ew-core"
+name = "core"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
